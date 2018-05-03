@@ -1,0 +1,11 @@
+__pycache__/
+data/
+.idea/
+.ipynb_checkpoints/
+catboost_info
+COS424 Final Draft v1.ipynb
+Data/
+Error/
+Pickle/
+Submission/
+.DS_Store
