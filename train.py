@@ -11,7 +11,7 @@ def train(train_df, test_df, Model, predictors, target='is_attributed', Model_pa
 
     if not os.path.exists('Error'):
             os.makedirs('Error')
-    time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    time = datetime.datetime.now().strftime("%H-%M-%S")
     if record:
         train_recorder = open('Error/%s_%s_params.txt' %(Model.__name__, time), 'w')
         train_recorder.write(Model.__name__ + '\n')
@@ -69,7 +69,7 @@ def train(train_df, test_df, Model, predictors, target='is_attributed', Model_pa
         sub = pd.DataFrame()
         sub['click_id'] = test_df['click_id'].astype('int')
         sub['is_attributed'] = np.mean(submit_pred, axis=0)
-        sub.to_csv('Submission/sub_it%s.csv'%(time),index=False, float_format='%.9f')
+        sub.to_csv('Submission/sub_it%s.csv'%(time), index=False, float_format='%.9f')
 
     with open('Error/experiments.txt', 'a') as record:
         record.write('\n\nTime: %s\n' %time)

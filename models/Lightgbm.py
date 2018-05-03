@@ -80,4 +80,4 @@ best_lgb = {'boosting_type': 'gbdt',
             'reg_lambda': 0.016517459948781423,
             'nthread': -1,
             'verbose': -1,
-            'categorical_column': [0, 1, 2, 3]}
+            'categorical_column': [0, 1, 2, 3, 4]}

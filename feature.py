@@ -3,6 +3,7 @@ import numpy as np
 import time
 import os
 import gc
+from imblearn.over_sampling import SMOTE
 
 
 def unique_channel_per_ip(df):
@@ -105,26 +106,26 @@ def prevclick_online(df):
 def var_hour_per_ip_day_channel(df):
     return df[['ip', 'day', 'channel']].merge(
         df[['ip', 'day', 'hour', 'channel']].groupby(by=['ip', 'day', 'channel'])['hour'].var().
-        reset_index().rename(columns={'hour': 'var_hour_per_ip_day_channel'}), how='left')['var_hour_per_ip_day_channel']
+        reset_index().rename(columns={'hour': 'var_hour_per_ip_day_channel'}), how='left')['var_hour_per_ip_day_channel'].fillna(500)
 
 
 def var_hour_per_ip_app_os(df):
     return df[['ip', 'app', 'os']].merge(df[['ip', 'app', 'os', 'hour']].groupby(by=['ip', 'app', 'os'])['hour'].var().
-                                         reset_index().rename(columns={'hour': 'var_hour_per_ip_app_os'}), how='left')['var_hour_per_ip_app_os']
+                                         reset_index().rename(columns={'hour': 'var_hour_per_ip_app_os'}), how='left')['var_hour_per_ip_app_os'].fillna(500)
 
 
 def var_day_per_ip_app_channel(df):
     return df[['ip', 'app', 'channel']].merge(
         df[['ip', 'app', 'channel', 'day']].groupby(by=['ip', 'app', 'channel'])['day'].var(). \
-        reset_index().rename(columns={'day': 'var_day_per_ip_app_channel'}), how='left')['var_day_per_ip_app_channel']
+        reset_index().rename(columns={'day': 'var_day_per_ip_app_channel'}), how='left')['var_day_per_ip_app_channel'].fillna(500)
 
 
-def preprocess(begin, end, feature_list, pickle_folder="Pickle", debug=False):
-    dtypes = {'ip': 'category',  # 'uint32',
-              'app': 'category',
-              'device': 'category',
-              'os': 'category',
-              'channel': 'category',
+def preprocess(begin, end, feature_list, pickle_folder="Pickle", debug=False, smote = False):
+    dtypes = {'ip': 'uint32',  # 'category',  # 'uint32',
+              'app': 'uint16',  # 'category',
+              'device': 'uint16',  # 'category',
+              'os': 'uint16',  # 'category',
+              'channel': 'uint16',  # 'category',
               'is_attributed': 'uint8',
               'click_id': 'uint32'
              }
@@ -164,7 +165,7 @@ def preprocess(begin, end, feature_list, pickle_folder="Pickle", debug=False):
         del feature; gc.collect()
 
         # for test features:
-        test_pickle_name = 'test_' + feature_name +'_pickle'
+        test_pickle_name = 'test_' + feature_name + '_pickle'
         test_pickle_path = pickle_folder + "/" + test_pickle_name
         if os.path.exists(test_pickle_path):
             print("loading pickle "+test_pickle_path)
@@ -177,7 +178,13 @@ def preprocess(begin, end, feature_list, pickle_folder="Pickle", debug=False):
         test_df[feature_name] = test_df[feature_name].astype(feature_dtype)
         del feature; gc.collect()
 
-    print("finished preprocessing within "+str(time.time()-start_time)+"s")
+    if smote:
+        predictors = list(['ip', 'app', 'device', 'os', 'channel'])
+        predictors.append(feature_list)
+        x_res, y_res = SMOTE().fit_sample(train_df[predictors], train_df['is_attributed'])
+        train_df = pd.DataFrame(np.c_[x_res, y_res], columns=predictors.append('is_attributed'))
+
+    print("finished pre-processing within "+str(time.time()-start_time)+"s")
     return train_df, test_df
 
 
