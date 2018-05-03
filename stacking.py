@@ -15,6 +15,9 @@ def get_stacking_features(validation=True):
     else:
         pickle_path = "Pickle/stacking/test"
     all_pickles = os.listdir(pickle_path)
+    if 'validation_target.csv' in all_pickles:
+        all_pickles.remove('validation_target.csv')
+    print(all_pickles)
 
     stacking_list = [pd.read_csv(os.path.join(pickle_path, f), index_col=0) for f in all_pickles]
     stacking_df = pd.concat(stacking_list, axis=1)
@@ -24,8 +27,8 @@ def get_stacking_features(validation=True):
     return stacking_df
 
 
-def generate_stacking_features(train_df, test_df, predictors, Model, params=None, target='is_attributed'):
-    stacking_pickle_path = 'Pickle/stacking'
+def generate_stacking_features(train_df, test_df, predictors, Model, params=None, target='is_attributed', stacking_folder='Pickle/stacking'):
+    stacking_pickle_path = stacking_folder
     if not os.path.exists(stacking_pickle_path):
         os.makedirs(stacking_pickle_path)
         os.makedirs(stacking_pickle_path + '/validation')
@@ -43,6 +46,8 @@ def generate_stacking_features(train_df, test_df, predictors, Model, params=None
     stack_train[target] = model.predict(train_df[predictors])
     stack_train.to_csv(train_pickle_name+'.csv', index=False)
     del stack_train; gc.collect()
+    if not os.path.exists(stacking_folder+'/validation/validation_target.csv'):
+        train_df[['ip', 'is_attributed']].to_csv(stacking_folder+'/validation/validation_target.csv', index=False)
 
     test_pickle_name = stacking_pickle_path + '/test/' + str(Model.__name__) + '_test_stacking_' + str(time)
     print('creating pickle: ' + test_pickle_name)
@@ -101,22 +106,21 @@ def train_stacking(stacking_df, Model, params=None, FOLDS=3, record=False, submi
             print("------------------------------------")
 
         avg_fold_auc = np.mean(kfold_errors)
+        print("average cross validation mean auc %f\n\n" % avg_fold_auc)
 
         if record:
             train_recorder.write("\nAverage cross validation mean auc: %f\n" %avg_fold_auc)
             train_recorder.close()
-        print("average cross validation mean auc %f\n\n" % avg_fold_auc)
 
         with open('Error/experiments.txt', 'a') as record:
             record.write('\n\nTime: %s\n' %time)
             record.write('model_params:%s\n' %model.get_params())
-            record.write('local validtion mean auc: %f\n' % avg_fold_auc)
+            record.write('local validation mean auc: %f\n' % avg_fold_auc)
 
         return avg_fold_auc
 
     else:  # if submit
         print("getting test stacking features....")
-        test_target = pd.read_csv('Pickle/stacking/test/test_target.csv')  # need revision
         test_df = get_stacking_features(validation=False)
         if not os.path.exists("Submission"):
             os.makedirs("Submission")
@@ -124,8 +128,8 @@ def train_stacking(stacking_df, Model, params=None, FOLDS=3, record=False, submi
         model = Model(model_params=params)
         model.fit(stacking_df[predictors], train_target['is_attributed'], **kwargs)
         sub = pd.DataFrame()
-        sub['click_id'] = test_target['click_id'].astype('int')
-        sub['is_attributed'] = model.predict(test_df[predictors])
+        sub['click_id'] = test_df['click_id'].astype('int')
+        sub['is_attributed'] = model.predict(test_df.iloc[:, 1:])
         time = datetime.datetime.now().strftime("%H-%M-%S")
         sub.to_csv('Submission/stacking_sub_it_%s.csv'%(time), index=False, float_format='%.9f')
 

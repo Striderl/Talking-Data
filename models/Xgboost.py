@@ -6,8 +6,8 @@ class Xgboost():
         xgb_params = {
             'eta': 0.6,
             'booster': 'gbtree',
-            'tree_method': "hist",
-            'grow_policy': "lossguide",
+            # 'tree_method': "hist",
+            # 'grow_policy': "lossguide",
             'learning_rate': 0.1,
             'min_child_weight': 1,  # minimum sum of weights of all observations required in a child, controls overfitting
             'max_depth': 6,

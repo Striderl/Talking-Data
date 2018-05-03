@@ -10,7 +10,8 @@ def train(train_df, test_df, Model, predictors, target='is_attributed', Model_pa
           FOLDS=3, record=False, submit=False, plot_feature_importance=False, **kwargs):
 
     if not os.path.exists('Error'):
-            os.makedirs('Error')
+            os.makedirs\
+                ('Error')
     time = datetime.datetime.now().strftime("%H-%M-%S")
     if record:
         train_recorder = open('Error/%s_%s_params.txt' %(Model.__name__, time), 'w')

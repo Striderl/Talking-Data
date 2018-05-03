@@ -45,12 +45,15 @@ train_df, test_df = preprocess(0, 200000, feature_list, pickle_folder="Pickle/de
 # if tune:
 # lgb_trials = tune_single_model(train_df, test_df, Lightgbm.Lightgbm, predictors, space_lightgbm, max_evals=66, record=True)
 # catboost_trials = tune_single_model(train_df, test_df, Catboost.CatBoost, predictors, space_catboost, max_evals=1, record=True)
-# xgb_trials = tune_single_model(train_df, test_df, Xgboost.Xgboost, predictors, space_xgb, max_evals=1, record=True)
+# xgb_trials = tune_single_model(train_df, test_df, Xgboost.Xgboost, predictors, space_xgb, max_evals=30, record=True)
 
 # if generate stacking
-
 # generate_stacking_features(train_df, test_df, predictors, Xgboost.Xgboost, params=None, target='is_attributed')
 # generate_stacking_features(train_df, test_df, predictors, Lightgbm.Lightgbm, params=Lightgbm.best_lgb, target='is_attributed')
+# stacking_df = get_stacking_features(validation=True)
+# stacking_df.head()
 
-# test = get_stacking_features(validation=False)
-# test.head()
+# if tune stacking
+
+# if submit stacking:
+# train_stacking(stacking_df, Lightgbm.Lightgbm, None, submit=True)

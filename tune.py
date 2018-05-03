@@ -34,7 +34,7 @@ space_rf = {
 }
 
 space_catboost = {
-    'iterations': hp.choice('iterations', list(range(100, 1000, 100))),
+    'iterations': 200,
     'learning_rate': hp.loguniform('learning_rate', -4, -1),
     'depth': hp.choice('depth', list(range(3, 8))),
     'l2-leaf-reg': hp.loguniform('l2-leaf-reg', 0, 2),
@@ -50,7 +50,7 @@ space_xgb = {
     'booster': 'gbtree',
     'learning_rate': hp.loguniform('learning_rate', -3, -1),
     'min_child_weight': hp.choice('min_child_weight', list(range(3))),  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-    'max_depth': hp.choice('max_depth', list(range(3, 7, 1))),
+    'max_depth': 3,  # hp.choice('max_depth', list(range(3, 7, 1))),
     'subsample': hp.choice('subsample', [0.6, 0.7, 0.8, 0.9]),
     'colsample_bytree': hp.choice('colsample_bytree', [0.6, 0.7, 0.8, 0.9]),
     'scale_pos_weight': 200,  # data imbalance
