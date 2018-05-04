@@ -10,12 +10,14 @@ class CatBoost():
         catboost_params = {
             # link to hpyerparameter documentation:
             # https://tech.yandex.com/catboost/doc/dg/concepts/python-reference_parameters-list-docpage/
-            'iterations': None,
+            'iterations': 200,
             'learning_rate': None,
             'depth': None,
             'loss_function': 'Logloss',
-            # 'border_count': 4,
-            # 'feature_border_type': 'MinEntropy',
+            'eval_metric': 'AUC',
+            'border_count': 4,
+            'random_seed': 66,
+            'feature_border_type': 'MinEntropy',
             'leaf_estimation_iterations': 5,
             'leaf_estimation_method': 'Gradient',
             'boosting_type': 'Plain',
@@ -24,12 +26,12 @@ class CatBoost():
         self.model_params = catboost_params
         if model_params is not None:
             self.model_params.update(model_params)
-        self.model = CatBoostClassifier()
+        self.model = CatBoostClassifier(**self.model_params)
         self.features = None
 
     def fit(self, X_train, y_train, **kwargs):
-        self.model.set_params(**kwargs)
-        self.model.fit(X_train, y_train)
+        # self.model.set_params(**kwargs)
+        self.model.fit(X_train, y_train, cat_features=[0, 1, 2, 3, 4])
         self.features = X_train.columns
 
     def predict(self, X):
