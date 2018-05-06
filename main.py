@@ -31,24 +31,27 @@ feature_list = {
     ]
 }
 
-predictors = ['ip', 'app', 'device', 'os', 'channel']
-for i in range(len(feature_list['generated'])):
-    predictors.append(feature_list['generated'][i][0])
-print(predictors)
 
 # get feature engineered train test sets
 train_df, test_df = preprocess(144900000, 184900000, feature_list, pickle_folder="Pickle", debug=False)
 # train_df, test_df = preprocess(0, 200000, feature_list, pickle_folder="Pickle/debug", debug=True)  # if debug mode
 
-# if submit:
-# train(train_df, test_df, Lightgbm.Lightgbm, predictors, record=True, submit=True, Model_params=Lightgbm.best_lgb, FOLDS=3, plot_feature_importance=True)
+predictors = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+for i in range(len(feature_list['generated'])):
+    predictors.append(feature_list['generated'][i][0])
+print(predictors)
+# if train/submit with cv
 # train(train_df, test_df, Xgboost.Xgboost, predictors, record=True, submit=True, Model_params=Xgboost.best_xgb, FOLDS=3)
-# train(train_df, test_df, Xgboost.Xgboost, predictors, record=True, submit=True, Model_params=None, FOLDS=1)
+
+# if train/submit without cv
+train(train_df, test_df, Xgboost.Xgboost, predictors, record=True, submit=True, Model_params=Xgboost.best_xgb, FOLDS=1, stacking=True)
+train(train_df, test_df, Catboost.CatBoost, predictors, record=True, submit=True, Model_params=Catboost.best_catboost, FOLDS=1, stacking=True)
+train(train_df, test_df, Lightgbm.Lightgbm, predictors, record=True, submit=True, Model_params=Lightgbm.best_lgb, FOLDS=1, stacking=True)
 
 # if tune:
 # lgb_trials = tune_single_model(train_df, test_df, Lightgbm.Lightgbm, predictors, space_lightgbm, max_evals=66, record=True)
 # catboost_trials = tune_single_model(train_df, test_df, Catboost.CatBoost, predictors, space_catboost, max_evals=1, record=True)
-xgb_trials = tune_single_model(train_df, test_df, Xgboost.Xgboost, predictors, space_xgb, max_evals=30, record=True, folds=1)
+# xgb_trials = tune_single_model(train_df, test_df, Xgboost.Xgboost, predictors, space_xgb, max_evals=30, record=True, folds=1)
 
 # if generate stacking
 # generate_stacking_features(train_df, test_df, predictors, Xgboost.Xgboost, params=None, target='is_attributed')

@@ -32,6 +32,7 @@ class Xgboost():
             self.model_params.update(model_params)
 
         self.model = None
+        self.bst_score = 0
 
     def fit(self, X_train, y_train, ifcv=True):
         if ifcv:
@@ -39,14 +40,14 @@ class Xgboost():
             watchlist = [(dtrain, 'train')]
             self.model = xgb.train(self.model_params, dtrain, 200, watchlist, maximize=True, verbose_eval=5)
         else:
-            x_train, x_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.1, random_state=66)
-            dtrain = xgb.DMatrix(x_train.values, y_train.values)
+            x_train, x_valid, Y_train, Y_valid = train_test_split(X_train, y_train, test_size=0.1, random_state=66)
+            dtrain = xgb.DMatrix(x_train.values, Y_train.values)
             del x_train, y_train; gc.collect()
-            dvalid = xgb.DMatrix(x_valid.values, y_valid.values)
-            del x_valid, y_valid; gc.collect()
+            dvalid = xgb.DMatrix(x_valid.values, Y_valid.values)
+            del x_valid, Y_valid; gc.collect()
             watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
             self.model = xgb.train(self.model_params, dtrain, 200, watchlist, maximize=True, early_stopping_rounds=25, verbose_eval=20)
-            return self.model
+            self.bst_score = self.model.best_score
 
     def predict(self, x_test, ifcv=True):
         dtest = xgb.DMatrix(x_test.values)
@@ -64,23 +65,42 @@ class Xgboost():
     def plot_features_importances(self):
         self.model.plot_importance()
 
+    def return_best_score(self):
+        return self.bst_score
 
-best_xgb = {
-            'eta': 0.6,
+
+# best_xgb = {
+#             'eta': 0.6,
+#             'booster': 'gbtree',
+#             'tree_method': 'hist',
+#             'grow_policy': 'lossguide',
+#             'learning_rate': 0.26069454841714973,
+#             'min_child_weight': 1,
+#             'max_depth': 5,
+#             'subsample': 0.7,
+#             'colsample_bytree': 0.8,
+#             'scale_pos_weight': 200,
+#             'gamma': 2,
+#             'reg_lambda': 0.6323212359081647,
+#             'alpha': 4,
+#             'objective': 'binary:logistic',
+#             'eval_metric': 'auc',
+#             'nthread': -1,
+#             'reg_alpha': 0.1744641464642278
+# }
+
+best_xgb = {'eta': 0.6,
             'booster': 'gbtree',
-            'tree_method': 'hist',
-            'grow_policy': 'lossguide',
-            'learning_rate': 0.26069454841714973,
+            'learning_rate': 0.21400948975462067,
             'min_child_weight': 1,
-            'max_depth': 5,
-            'subsample': 0.7,
-            'colsample_bytree': 0.8,
+            'max_depth': 6,
+            'subsample': 0.8, 'colsample_bytree': 0.8,
             'scale_pos_weight': 200,
             'gamma': 2,
-            'reg_lambda': 0.6323212359081647,
+            'reg_lambda': 0.3785625977792282,
             'alpha': 4,
             'objective': 'binary:logistic',
             'eval_metric': 'auc',
+            'silent': 1,
             'nthread': -1,
-            'reg_alpha': 0.1744641464642278
-}
+            'reg_alpha': 0.002611357241592072}

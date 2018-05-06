@@ -1,10 +1,11 @@
 import pandas as pd
 import lightgbm as lgb
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+import gc
 
 
 class Lightgbm():
-
     def __init__(self, model_params=None):
         lgb_params = {
             'boosting_type': 'gbdt',
@@ -35,6 +36,9 @@ class Lightgbm():
             self.model_params.update(model_params)
 
         self.model = None
+        self.features = None
+        self.best_iter = 0
+        self.bst_score = 0
 
     # def fit(self, X_train, y_train, X_test, y_test, features, num_boost_round=3000, early_stopping_rounds=20):
     #    d_train = lgb.Dataset(X_train, label=y_train,feature_name=features)
@@ -43,22 +47,45 @@ class Lightgbm():
     #                        valid_sets=[d_train, d_valid], valid_names=['train','valid'],\
     #                        early_stopping_rounds=early_stopping_rounds, evals_result={})
 
-    def fit(self, X_train, y_train, **kwargs):
-        d_train = lgb.Dataset(X_train, label=y_train, **{} if "data_arg" not in kwargs else kwargs['data_arg'])
-        self.model = lgb.train(self.model_params, d_train, **{} if "train_arg" not in kwargs else kwargs['train_arg'])
+    def fit(self, X_train, y_train, ifcv=True):
+        self.features = X_train.columns
+        if ifcv:
+            d_train = lgb.Dataset(X_train, label=y_train)
+            self.model = lgb.train(self.model_params, d_train)
+        else:
+            x_train, x_valid, Y_train, Y_valid = train_test_split(X_train, y_train, test_size=0.1, random_state=66)
+            d_train = lgb.Dataset(x_train, label=Y_train)
+            del x_train, Y_train;
+            gc.collect()
+            d_valid = lgb.Dataset(x_valid, label=Y_valid)
+            del x_valid, Y_valid;
+            gc.collect()
+            evals_results = {}
+            self.model = lgb.train(self.model_params, d_train, num_boost_round=1000,
+                                   valid_sets=[d_valid], valid_names=['valid'],
+                                   early_stopping_rounds=25, evals_result=evals_results)
+            self.best_iter = self.model.best_iteration
+            self.bst_score = evals_results['valid']['auc'][self.best_iter-1]
 
-    def predict(self, X):
-        return self.model.predict(X)
+    def predict(self, X, ifcv=True):
+        if ifcv:
+            return self.model.predict(X)
+        else:
+            return self.model.predict(X, num_iteration=self.best_iter)
 
     def get_params(self):
         return self.model_params if self.model_params is not None else {}
 
     def get_features_importances(self):
-        return pd.Series(data=self.model.feature_importance(), index=self.model.feature_name()).sort_values(ascending=False)
+        return pd.Series(data=self.model.feature_importance(), index=self.model.feature_name()).sort_values(
+            ascending=False)
 
     def plot_features_importances(self):
         ax = lgb.plot_importance(self.model, max_num_features=100)
         plt.show()
+
+    def return_best_score(self):
+        return self.bst_score
 
 
 best_lgb = {'boosting_type': 'gbdt',

@@ -120,7 +120,7 @@ def var_day_per_ip_app_channel(df):
         reset_index().rename(columns={'day': 'var_day_per_ip_app_channel'}), how='left')['var_day_per_ip_app_channel'].fillna(500)
 
 
-def preprocess(begin, end, feature_list, pickle_folder="Pickle", debug=False, smote = False):
+def preprocess(begin, end, feature_list, pickle_folder="Pickle", debug=False, smote=False):
     dtypes = {'ip': 'uint32',  # 'category',  # 'uint32',
               'app': 'uint16',  # 'category',
               'device': 'uint16',  # 'category',

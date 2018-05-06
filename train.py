@@ -4,15 +4,16 @@ import os
 from sklearn.metrics import roc_auc_score
 import datetime
 from sklearn.model_selection import KFold
+import gc
 
 
 def train(train_df, test_df, Model, predictors, target='is_attributed', Model_params=None,
-          FOLDS=3, record=False, submit=False, plot_feature_importance=False):
+          FOLDS=3, record=False, submit=False, plot_feature_importance=False, stacking = False):
 
     if not os.path.exists('Error'):
             os.makedirs\
                 ('Error')
-    time = datetime.datetime.now().strftime("%H-%M-%S")
+    time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     if record:
         train_recorder = open('Error/%s_%s_params.txt' %(Model.__name__, time), 'w')
         train_recorder.write(Model.__name__ + '\n')
@@ -77,7 +78,7 @@ def train(train_df, test_df, Model, predictors, target='is_attributed', Model_pa
         print("no cv, start training......")
         model = Model(model_params=Model_params)
         model.fit(train_df[predictors], train_df[target], ifcv=False)
-        avg_fold_auc = model.model.best_score
+        avg_fold_auc = model.return_best_score()
 
         if record:
             train_recorder.write('Parameters: %s\n' %model.get_params())
@@ -86,19 +87,30 @@ def train(train_df, test_df, Model, predictors, target='is_attributed', Model_pa
                 train_recorder.write('Feature importances:\n%s\n' %feature_importances)
             train_recorder.write('Validation error: ' + str(avg_fold_auc) + '\n')
 
-            if submit:
-                print("making prediction on test set.....")
-                if not os.path.exists("Submission"):
-                    os.makedirs("Submission")
-                sub = pd.DataFrame()
-                sub['click_id'] = test_df['click_id'].astype('int')
-                sub['is_attributed'] = model.predict(test_df[predictors])
-                sub.to_csv('Submission/sub_it%s.csv'%(time), index=False, float_format='%.9f')
+        if submit:
+            print("making prediction on test set.....")
+            if not os.path.exists("Submission"):
+                os.makedirs("Submission")
+            sub = pd.DataFrame()
+            sub['click_id'] = test_df['click_id'].astype('int')
+            sub['is_attributed'] = model.predict(test_df[predictors], ifcv=False)
+            sub.to_csv('Submission/%s_%s.csv'%(Model.__name__, time), index=False, float_format='%.9f')
 
-            if plot_feature_importance:
-                model.plot_features_importances()
+        if plot_feature_importance:
+            model.plot_features_importances()
 
-            print("------------------------------------")
+        print("------------------------------------")
+
+        # TODO(hm): move this part to stacking.py
+        if stacking:
+            print("making prediction on train set for stacking purpose")
+            stack_train = pd.DataFrame()
+            stack_train['ip'] = train_df['ip'].astype('uint32')
+            stack_train[target] = model.predict(train_df[predictors], ifcv=False)
+            stack_train.to_csv('Pickle/stacking/validation/'+str(Model.__name__)+'.csv', index=False)
+            del stack_train; gc.collect()
+            if not os.path.exists('Pickle/stacking/validation/validation_target.csv'):
+                train_df[['ip', 'is_attributed']].to_csv('Pickle/stacking/validation/validation_target.csv', index=False)
 
     print("average cross validation mean auc %f\n\n" %avg_fold_auc)
     with open('Error/experiments.txt', 'a') as record:

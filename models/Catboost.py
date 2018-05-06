@@ -2,6 +2,8 @@ from catboost import CatBoostClassifier
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
 
 
 class CatBoost():
@@ -26,15 +28,27 @@ class CatBoost():
         self.model_params = catboost_params
         if model_params is not None:
             self.model_params.update(model_params)
-        self.model = CatBoostClassifier(**self.model_params)
+        self.model = None
         self.features = None
+        self.bst_score = 0
 
-    def fit(self, X_train, y_train, **kwargs):
-        # self.model.set_params(**kwargs)
-        self.model.fit(X_train, y_train, cat_features=[0, 1, 2, 3, 4])
+    def fit(self, X_train, y_train, ifcv=True):
         self.features = X_train.columns
+        if ifcv:
+            self.model = CatBoostClassifier(**self.model_params)
+            self.model.fit(X_train, y_train, cat_features=[0, 1, 2, 3, 4])
+        else:
+            params_update = {
+                'od_type': 'Iter',
+                'od_wait': 25
+            }
+            self.model_params.update(params_update)
+            self.model = CatBoostClassifier(**self.model_params)
+            x_train, x_valid, Y_train, Y_valid = train_test_split(X_train, y_train, test_size=0.1, random_state=66)
+            self.model.fit(x_train, Y_train, cat_features=[0, 1, 2, 3, 4], eval_set=(x_valid, Y_valid), use_best_model=True)
+            self.bst_score = roc_auc_score(Y_valid, self.predict(x_valid))
 
-    def predict(self, X):
+    def predict(self, X, ifcv=True):
         return self.model.predict_proba(X)[:, 1]
 
     def get_params(self):
@@ -56,3 +70,20 @@ class CatBoost():
             for item in x.get_ticklabels():
                 item.set_rotation(90)
             plt.show()
+
+    def return_best_score(self):
+        return self.bst_score
+
+
+best_catboost = {
+    'iterations': 200,
+    'learning_rate': 0.3367,
+    'depth': 5,
+    'scale_pos_weight': 200,
+    'border_count': 6,
+    'feature_border_type': 'MinEntropy',
+    'boosting_type': 'Plain',
+    'eval_metric': 'AUC',
+    'leaf_estimation_iterations': 10,
+    'leaf_estimation_method': 'Gradient'
+}
